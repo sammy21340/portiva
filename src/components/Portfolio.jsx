@@ -1,12 +1,17 @@
+import { useEffect, useRef } from "react";
 import { usePortfolio } from "../hooks/usePortfolio";
+import { useTheme } from "../hooks/useTheme";
+import { useAnimatedNumber } from "../hooks/useAnimatedNumber";
 import AddHoldingForm from "./AddHoldingForm";
 import HoldingRow from "./HoldingRow";
 import PriceChart from "./PriceChart";
-import SegmentedControl from "./SegmentedControl";
+import ThemeToggle from "./ThemeToggle";
 import Header from "./Header";
 import Footer from "./Footer";
-import { CURRENCIES, formatMoney } from "../utils/format";
+import { formatMoney } from "../utils/format";
 import "../styles/Portfolio.css";
+import "../styles/theme.css";
+import "../styles/motion.css";
 
 // Keyed to coinId, not array position — so a coin's color stays
 // the same regardless of what order holdings were added in.
@@ -34,11 +39,8 @@ const EXTRA_COLORS = [
   "#8C7A66",
 ];
 
-// Built once at load, so the toggle isn't handed a new array on every render.
-const CURRENCY_OPTIONS = CURRENCIES.map((c) => ({
-  value: c,
-  label: c.toUpperCase(),
-}));
+// The app is USD only now.
+const DISPLAY_CURRENCY = "usd";
 
 function Portfolio() {
   const {
@@ -54,6 +56,22 @@ function Portfolio() {
     removeHolding,
     updateHolding,
   } = usePortfolio();
+
+  const { theme, toggle: toggleTheme } = useTheme();
+
+  const listRef = useRef(null);
+  const removingRef = useRef(new Set());
+
+  // If an older session saved NGN, switch back to USD. There's no toggle
+  // anymore, so without this the app could get stuck showing NGN.
+  useEffect(() => {
+    if (currency !== DISPLAY_CURRENCY) setCurrency(DISPLAY_CURRENCY);
+  }, [currency, setCurrency]);
+
+  // Numbers glide to their new value instead of snapping
+  const animatedTotal = useAnimatedNumber(totalValue);
+  const animatedProfitLoss = useAnimatedNumber(totalProfitLoss);
+  const animatedProfitLossPct = useAnimatedNumber(totalProfitLossPct);
 
   const colorById = {};
   let extraIndex = 0;
@@ -71,15 +89,52 @@ function Portfolio() {
     ).values(),
   ];
 
+  // Slide a row out, then actually remove it. If anything about the row
+  // can't be found, or the user prefers reduced motion, remove instantly.
+  function handleRemove(arg) {
+    const id = arg !== null && typeof arg === "object" ? arg.id : arg;
+    if (removingRef.current.has(id)) return; // already on its way out
+
+    const index = holdings.findIndex((h) => h.id === id);
+    const el = index === -1 ? null : listRef.current?.children[index];
+    const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+
+    if (!el || reduceMotion) {
+      removeHolding(arg);
+      return;
+    }
+
+    removingRef.current.add(id);
+    const finish = () => {
+      removingRef.current.delete(id);
+      removeHolding(arg);
+    };
+
+    const height = el.getBoundingClientRect().height;
+    el.style.boxSizing = "border-box";
+    el.style.overflow = "hidden";
+
+    el.animate(
+      [
+        { height: `${height}px`, opacity: 1, transform: "translateX(0)" },
+        {
+          height: "0px",
+          opacity: 0,
+          transform: "translateX(32px)",
+          marginTop: "0px",
+          marginBottom: "0px",
+          paddingTop: "0px",
+          paddingBottom: "0px",
+        },
+      ],
+      { duration: 300, easing: "cubic-bezier(0.32, 0.72, 0, 1)", fill: "forwards" }
+    ).finished.then(finish, finish);
+  }
+
   return (
     <div className="portfolio-page">
       <Header>
-        <SegmentedControl
-          label="Display currency"
-          options={CURRENCY_OPTIONS}
-          value={currency}
-          onChange={setCurrency}
-        />
+        <ThemeToggle theme={theme} onToggle={toggleTheme} />
       </Header>
 
       <div className="portfolio-header">
@@ -88,7 +143,7 @@ function Portfolio() {
 
       <div className="total-value">
         <p className="total-value-label">Total value</p>
-        <p className="total-value-amount">{formatMoney(totalValue, currency)}</p>
+        <p className="total-value-amount">{formatMoney(animatedTotal, currency)}</p>
 
         {totalProfitLoss !== null && (
           <p
@@ -96,17 +151,10 @@ function Portfolio() {
               totalProfitLoss >= 0 ? "holding-up" : "holding-down"
             }`}
           >
-            {formatMoney(totalProfitLoss, currency, { signed: true })}
-            {totalProfitLossPct !== null &&
-              ` (${totalProfitLossPct >= 0 ? "+" : ""}${totalProfitLossPct.toFixed(1)}%)`}{" "}
+            {formatMoney(animatedProfitLoss, currency, { signed: true })}
+            {Number.isFinite(animatedProfitLossPct) &&
+              ` (${animatedProfitLossPct >= 0 ? "+" : ""}${animatedProfitLossPct.toFixed(1)}%)`}{" "}
             overall
-          </p>
-        )}
-
-        {currency === "ngn" && (
-          <p className="currency-note">
-            Naira values use CoinGecko's USD/NGN rate, which can differ from the
-            rate you'd get on P2P platforms.
           </p>
         )}
 
@@ -147,13 +195,13 @@ function Portfolio() {
       {loading && <p className="loading-text">Loading prices...</p>}
       {error && <p className="page-error">{error}</p>}
 
-      <ul>
+      <ul className="holding-list" ref={listRef}>
         {holdings.map((h) => (
           <HoldingRow
             key={h.id}
             holding={h}
             currency={currency}
-            onRemove={removeHolding}
+            onRemove={handleRemove}
             onUpdate={updateHolding}
           />
         ))}

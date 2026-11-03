@@ -9,23 +9,22 @@ export default function Footer() {
     <footer className="site-footer">
       <div className="site-footer-top">
         <Brand size={22} />
-        <p className="site-footer-tagline">Every coin, in dollars and naira.</p>
       </div>
 
       <p className="site-footer-trust">
-        Portiva never holds your funds or asks for your keys. Your portfolio is
-        saved on this device only.
+        Portiva is non-custodial: it never holds your funds or asks for your
+        keys. Portfolio data is stored locally on your device.
       </p>
 
       <p className="site-footer-small">
         Prices by{" "}
         <a href="https://www.coingecko.com/" target="_blank" rel="noopener noreferrer">
           CoinGecko
-        </a>
-        . Not financial advice. Prices may be delayed or inaccurate.
+        </a>{" "}
+        · Not financial advice
       </p>
 
-      <p className="site-footer-small">&copy; {year} Portiva</p>
+      <p className="site-footer-small">&copy; {year} Portiva. All rights reserved.</p>
     </footer>
   );
 }

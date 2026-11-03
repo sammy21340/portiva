@@ -1,0 +1,73 @@
+:root {
+  --ease-out: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/* Buttons: a small press when tapped */
+button:not(:disabled):active {
+  transform: scale(0.96);
+  transition: transform 80ms ease;
+}
+
+/* P/L color fades instead of flipping */
+.total-value-pl,
+.holding-up,
+.holding-down {
+  transition: color 400ms ease;
+}
+
+/* Allocation bar: each segment grows from its left edge on load,
+   and glides when its width changes later */
+.allocation-bar > div {
+  transform-origin: left center;
+  animation: seg-grow 700ms var(--ease-out) backwards;
+  transition: width 500ms var(--ease-out);
+}
+.allocation-bar > div:nth-child(2) { animation-delay: 60ms; }
+.allocation-bar > div:nth-child(3) { animation-delay: 120ms; }
+.allocation-bar > div:nth-child(4) { animation-delay: 180ms; }
+.allocation-bar > div:nth-child(5) { animation-delay: 240ms; }
+.allocation-bar > div:nth-child(6) { animation-delay: 300ms; }
+.allocation-bar > div:nth-child(7) { animation-delay: 360ms; }
+.allocation-bar > div:nth-child(8) { animation-delay: 420ms; }
+
+@keyframes seg-grow {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+/* New holdings fade and slide in */
+.holding-list > * {
+  animation: holding-in 380ms var(--ease-out) backwards;
+}
+
+@keyframes holding-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Chart line and area draw in from left to right */
+.pc-reveal {
+  animation: pc-reveal 900ms var(--ease-out);
+}
+
+@keyframes pc-reveal {
+  from { clip-path: inset(0 100% 0 0); }
+  to { clip-path: inset(0 0 0 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .allocation-bar > div,
+  .holding-list > *,
+  .pc-reveal {
+    animation: none;
+  }
+  .allocation-bar > div,
+  .total-value-pl,
+  .holding-up,
+  .holding-down {
+    transition: none;
+  }
+  button:not(:disabled):active {
+    transform: none;
+  }
+}

@@ -138,8 +138,10 @@ export default function PriceChart({ coins, currency }) {
             role="img"
             aria-label={`Price chart, last ${days} days`}
           >
-            <path d={geometry.area} className="pc-area" />
-            <path d={geometry.line} className="pc-line" vectorEffect="non-scaling-stroke" />
+            <g className="pc-reveal">
+              <path d={geometry.area} className="pc-area" />
+              <path d={geometry.line} className="pc-line" vectorEffect="non-scaling-stroke" />
+            </g>
             {hoverPoint && (
               <>
                 <line
@@ -162,11 +164,6 @@ export default function PriceChart({ coins, currency }) {
           <span>Low {formatMoney(geometry.min, code)}</span>
           <span>High {formatMoney(geometry.max, code)}</span>
         </div>
-      )}
-      {code === "NGN" && (
-        <p className="pc-note">
-          NGN prices use CoinGecko's exchange rate, which can differ from P2P rates.
-        </p>
       )}
     </section>
   );

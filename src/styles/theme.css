@@ -1,0 +1,19 @@
+/* Dark mode (stopgap): when data-theme="dark" is set on <html> by useTheme,
+   the whole rendered page is inverted. The hue-rotate undoes the color shift
+   the inversion causes, so reds and greens stay recognizable.
+   It works with any existing CSS. A hand-built theme using CSS variables
+   would give exact colors, but needs every stylesheet rewritten. */
+html {
+  transition: filter 350ms ease, background-color 350ms ease;
+}
+
+html[data-theme="dark"] {
+  filter: invert(0.92) hue-rotate(180deg);
+  background-color: #fff; /* becomes near-black after the inversion */
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    transition: none;
+  }
+}
